@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "version": "v0.2.0",
+  "name": "example.org/github-mcp-server",
+  "description": "GitHub MCP server running as a local stdio process via Docker.",
+  "authors": ["Example Corp"],
+  "created_at": "2025-06-01T00:00:00Z",
+  "skills": [
+    { "name": "natural_language_processing/natural_language_understanding", "id": 101 }
+  ],
+  "modules": [
+    {
+      "name": "integration/mcp",
+      "data": {
+        "name": "github-mcp-server",
+        "connections": [
+          {
+            "type": "stdio",
+            "command": "docker",
+            "args": ["run", "-i", "--rm", "ghcr.io/github/github-mcp-server"],
+            "env_vars": [
+              {
+                "name": "GITHUB_PERSONAL_ACCESS_TOKEN",
+                "description": "GitHub personal access token with repo scope",
+                "required": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

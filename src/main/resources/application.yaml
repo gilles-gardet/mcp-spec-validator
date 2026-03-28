@@ -1,0 +1,6 @@
+oasf:
+  validator.default-schema-version: 1.0.0
+server:
+  port: 8060
+spring:
+  application.name: mcp-spec-validator

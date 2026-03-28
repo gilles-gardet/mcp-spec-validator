@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "version": "v0.1.0",
+  "name": "example.org/broken-mcp-server",
+  "description": "Invalid: the MCP module data is missing the required connections field.",
+  "authors": ["Example Corp"],
+  "created_at": "2025-01-01T00:00:00Z",
+  "skills": [
+    { "name": "natural_language_processing/natural_language_understanding", "id": 101 }
+  ],
+  "modules": [
+    {
+      "name": "integration/mcp",
+      "data": {
+        "name": "broken-mcp-server"
+      }
+    }
+  ]
+}
