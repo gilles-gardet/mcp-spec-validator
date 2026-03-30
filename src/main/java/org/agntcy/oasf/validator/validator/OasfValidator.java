@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.ValidationMessage;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import org.agntcy.oasf.validator.error.OasfValidationException;
 import org.agntcy.oasf.validator.model.OasfValidatorProperties;
@@ -20,14 +19,12 @@ public class OasfValidator {
   private final OasfSchemaCache schemaCache;
   private final ObjectMapper objectMapper;
 
-  private static final String SCHEMA_VERSION_FIELD = "schema_version";
-
   /**
    * Creates a new validator from the given configuration properties.
    *
    * @param properties OASF validator configuration (default schema version)
-   * @param schemaCache cache that fetches and stores JSON Schemas by version
-   * @param objectMapper Jackson mapper used to parse record JSON
+   * @param schemaCache cache that loads and stores JSON Schemas by version
+   * @param objectMapper Jackson mapper used to parse the MCP module JSON
    */
   public OasfValidator(
       final OasfValidatorProperties properties,
@@ -39,51 +36,37 @@ public class OasfValidator {
   }
 
   /**
-   * Validates a record JSON string against the OASF schema. The schema version is extracted from
-   * the {@code schema_version} field in the record. Falls back to the configured default version
-   * when the field is absent.
+   * Validates an MCP module JSON string against the OASF MCP module schema. Uses the default
+   * schema version configured in the application properties.
    *
-   * @param recordJson the full OASF record as a JSON string
+   * @param moduleJson the MCP module as a JSON string (e.g. {@code {"name":
+   *     "integration/mcp","data":{...}}})
    * @return the validation outcome with error messages
    */
-  public ValidationResult validateRecord(final String recordJson) {
-    final String schemaVersion = extractSchemaVersion(recordJson);
-    return validateRecord(recordJson, schemaVersion);
+  public ValidationResult validateModule(final String moduleJson) {
+    return validateModule(moduleJson, defaultSchemaVersion);
   }
 
   /**
-   * Validates a record JSON string against a specific schema version.
+   * Validates an MCP module JSON string against a specific OASF MCP schema version.
    *
-   * @param recordJson the full OASF record as a JSON string
+   * @param moduleJson the MCP module as a JSON string
    * @param schemaVersion the schema version to validate against (e.g. {@code "1.0.0"})
    * @return the validation outcome with error messages
    */
-  public ValidationResult validateRecord(final String recordJson, final String schemaVersion) {
-    final JsonNode recordNode;
+  public ValidationResult validateModule(final String moduleJson, final String schemaVersion) {
+    final JsonNode moduleNode;
     try {
-      recordNode = objectMapper.readTree(recordJson);
+      moduleNode = objectMapper.readTree(moduleJson);
     } catch (final JsonProcessingException exception) {
-      throw new OasfValidationException("Failed to parse record JSON", exception);
+      throw new OasfValidationException("Failed to parse module JSON", exception);
     }
     final Set<ValidationMessage> violations =
-        schemaCache.getSchema(schemaVersion).validate(recordNode);
+        schemaCache.getSchema(schemaVersion).validate(moduleNode);
     final List<String> errors = violations.stream().map(ValidationMessage::getMessage).toList();
     if (errors.isEmpty()) {
       return ValidationResult.valid(List.of());
     }
     return ValidationResult.invalid(errors, List.of());
-  }
-
-  private String extractSchemaVersion(final String recordJson) {
-    try {
-      final JsonNode root = objectMapper.readTree(recordJson);
-      final JsonNode versionNode = root.get(SCHEMA_VERSION_FIELD);
-      if (Objects.nonNull(versionNode) && versionNode.isTextual()) {
-        return versionNode.asText();
-      }
-    } catch (final JsonProcessingException exception) {
-      throw new OasfValidationException("Failed to parse record JSON", exception);
-    }
-    return defaultSchemaVersion;
   }
 }

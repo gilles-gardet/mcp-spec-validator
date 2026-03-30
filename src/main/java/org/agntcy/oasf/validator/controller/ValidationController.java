@@ -28,11 +28,12 @@ public class ValidationController {
   }
 
   /**
-   * Validates a raw OASF record JSON body against the configured OASF schema server.
+   * Validates a raw MCP module JSON body against the OASF MCP module schema.
    *
-   * @param recordJson the OASF record to validate, as a raw JSON string
+   * @param moduleJson the MCP module to validate, as a raw JSON string (e.g. {@code
+   *     {"name":"integration/mcp","data":{...}}})
    * @param schemaVersion optional schema version override (e.g. {@code "1.0.0"}); when omitted, the
-   *     version is extracted from the record's {@code schema_version} field
+   *     application's default schema version is used
    * @return {@code 200} with the {@link ValidationResult} when valid, {@code 422} with the {@link
    *     ValidationResult} (including errors) when invalid
    */
@@ -40,12 +41,12 @@ public class ValidationController {
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ValidationResult> validate(
-      @RequestBody final String recordJson,
+      @RequestBody final String moduleJson,
       @RequestParam(required = false) final String schemaVersion) {
     final ValidationResult result =
         Objects.nonNull(schemaVersion)
-            ? validator.validateRecord(recordJson, schemaVersion)
-            : validator.validateRecord(recordJson);
+            ? validator.validateModule(moduleJson, schemaVersion)
+            : validator.validateModule(moduleJson);
     if (result.valid()) {
       return ResponseEntity.ok(result);
     }

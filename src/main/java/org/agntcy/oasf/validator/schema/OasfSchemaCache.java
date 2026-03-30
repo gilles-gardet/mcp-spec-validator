@@ -1,7 +1,7 @@
 package org.agntcy.oasf.validator.schema;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -19,7 +19,7 @@ public class OasfSchemaCache {
   private final ObjectMapper objectMapper;
   private final Map<String, JsonSchema> cache = new ConcurrentHashMap<>();
 
-  private static final String SCHEMA_RESOURCE_PATTERN = "/schemas/%s/record.json";
+  private static final String SCHEMA_RESOURCE_PATTERN = "/schemas/%s/mcp.json";
 
   /**
    * Constructor.
@@ -50,10 +50,9 @@ public class OasfSchemaCache {
                 .formatted(version, resourcePath);
         throw new OasfValidationException(errorMessage);
       }
-      final ObjectNode schemaNode = (ObjectNode) objectMapper.readTree(schemaStream);
-      schemaNode.remove("$schema");
+      final JsonNode schemaNode = objectMapper.readTree(schemaStream);
       final JsonSchemaFactory factory =
-          JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
+          JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
       return factory.getSchema(schemaNode);
     } catch (final IOException exception) {
       final var errorMessage = "Failed to load schema for version: %s".formatted(version);

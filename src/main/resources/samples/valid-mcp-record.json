@@ -1,25 +1,12 @@
 {
-  "schema_version": "1.0.0",
-  "version": "v0.1.0",
-  "name": "example.org/my-mcp-server",
-  "description": "A minimal valid MCP server exposing a streamable-HTTP connection.",
-  "authors": ["Example Corp"],
-  "created_at": "2025-01-01T00:00:00Z",
-  "skills": [
-    { "name": "natural_language_processing/natural_language_understanding", "id": 101 }
-  ],
-  "modules": [
-    {
-      "name": "integration/mcp",
-      "data": {
-        "name": "my-mcp-server",
-        "connections": [
-          {
-            "type": "streamable-http",
-            "url": "https://www.example.com/mcp"
-          }
-        ]
+  "name": "integration/mcp",
+  "data": {
+    "name": "my-mcp-server",
+    "connections": [
+      {
+        "type": "streamable-http",
+        "url": "https://www.example.com/mcp"
       }
-    }
-  ]
+    ]
+  }
 }

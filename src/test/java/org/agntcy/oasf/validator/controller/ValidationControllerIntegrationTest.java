@@ -10,59 +10,29 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-/**
- * Integration tests for {@link ValidationController}.
- * These tests download the JSON Schema from the live OASF schema server on first run —
- * an active internet connection is required.
- */
+/** Integration tests for {@link ValidationController}. */
 @SpringBootTest
 @AutoConfigureMockMvc
 class ValidationControllerIntegrationTest {
 
-    private static final String VALID_MCP_RECORD = """
+    private static final String VALID_MCP_MODULE = """
         {
-          "schema_version": "1.0.0",
-          "version": "v0.1.0",
-          "name": "example.org/my-mcp-server",
-          "description": "A test MCP server",
-          "authors": ["Test Corp"],
-          "created_at": "2025-01-01T00:00:00Z",
-          "skills": [
-            { "name": "natural_language_processing/natural_language_understanding", "id": 101 }
-          ],
-          "modules": [
-            {
-              "name": "integration/mcp",
-              "data": {
-                "name": "my-mcp-server",
-                "connections": [
-                  { "type": "streamable-http", "url": "https://www.example.com/mcp" }
-                ]
-              }
-            }
-          ]
+          "name": "integration/mcp",
+          "data": {
+            "name": "my-mcp-server",
+            "connections": [
+              { "type": "streamable-http", "url": "https://www.example.com/mcp" }
+            ]
+          }
         }
         """;
 
-    private static final String INVALID_MCP_RECORD = """
+    private static final String INVALID_MCP_MODULE = """
         {
-          "schema_version": "1.0.0",
-          "version": "v0.1.0",
-          "name": "example.org/invalid-mcp-server",
-          "description": "An MCP server record missing the required connections field",
-          "authors": ["Test Corp"],
-          "created_at": "2025-01-01T00:00:00Z",
-          "skills": [
-            { "name": "natural_language_processing/natural_language_understanding", "id": 101 }
-          ],
-          "modules": [
-            {
-              "name": "integration/mcp",
-              "data": {
-                "name": "invalid-mcp-server"
-              }
-            }
-          ]
+          "name": "integration/mcp",
+          "data": {
+            "name": "broken-server"
+          }
         }
         """;
 
@@ -70,22 +40,22 @@ class ValidationControllerIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("🎉 POST /validate with a valid record should return 200 with valid=true")
-    void postValidateValidRecord() throws Exception {
+    @DisplayName("🎉 POST /validate with a valid MCP module should return 200 with valid=true")
+    void postValidateValidModule() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/validate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(VALID_MCP_RECORD))
+                .content(VALID_MCP_MODULE))
             .andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.valid").value(true))
             .andExpect(MockMvcResultMatchers.jsonPath("$.errors").isEmpty());
     }
 
     @Test
-    @DisplayName("💩 POST /validate with an invalid record should return 422 with errors")
-    void postValidateInvalidRecord() throws Exception {
+    @DisplayName("💩 POST /validate with an invalid MCP module should return 422 with errors")
+    void postValidateInvalidModule() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/validate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(INVALID_MCP_RECORD))
+                .content(INVALID_MCP_MODULE))
             .andExpect(MockMvcResultMatchers.status().isUnprocessableEntity())
             .andExpect(MockMvcResultMatchers.jsonPath("$.valid").value(false))
             .andExpect(MockMvcResultMatchers.jsonPath("$.errors").isNotEmpty());
@@ -97,7 +67,7 @@ class ValidationControllerIntegrationTest {
         mockMvc.perform(MockMvcRequestBuilders.post("/validate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .param("schemaVersion", "1.0.0")
-                .content(VALID_MCP_RECORD))
+                .content(VALID_MCP_MODULE))
             .andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.valid").value(true));
     }
