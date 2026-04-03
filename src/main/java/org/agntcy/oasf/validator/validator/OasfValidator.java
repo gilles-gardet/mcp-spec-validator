@@ -1,11 +1,10 @@
 package org.agntcy.oasf.validator.validator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.InputFormat;
 import java.util.List;
-import java.util.Set;
 import org.agntcy.oasf.validator.error.OasfValidationException;
 import org.agntcy.oasf.validator.model.OasfValidatorProperties;
 import org.agntcy.oasf.validator.model.ValidationResult;
@@ -55,15 +54,14 @@ public class OasfValidator {
    * @return the validation outcome with error messages
    */
   public ValidationResult validateModule(final String moduleJson, final String schemaVersion) {
-    final JsonNode moduleNode;
     try {
-      moduleNode = objectMapper.readTree(moduleJson);
+      objectMapper.readTree(moduleJson);
     } catch (final JsonProcessingException exception) {
       throw new OasfValidationException("Failed to parse module JSON", exception);
     }
-    final Set<ValidationMessage> violations =
-        schemaCache.getSchema(schemaVersion).validate(moduleNode);
-    final List<String> errors = violations.stream().map(ValidationMessage::getMessage).toList();
+    final List<Error> violations =
+        schemaCache.getSchema(schemaVersion).validate(moduleJson, InputFormat.JSON);
+    final List<String> errors = violations.stream().map(Error::getMessage).toList();
     if (errors.isEmpty()) {
       return ValidationResult.valid(List.of());
     }

@@ -2,11 +2,13 @@ package org.agntcy.oasf.validator.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaLocation;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.dialect.Dialects;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OasfSchemaCache {
   private final ObjectMapper objectMapper;
-  private final Map<String, JsonSchema> cache = new ConcurrentHashMap<>();
+  private final Map<String, Schema> cache = new ConcurrentHashMap<>();
 
   private static final String SCHEMA_RESOURCE_PATTERN = "/schemas/%s/mcp.json";
 
@@ -31,32 +33,35 @@ public class OasfSchemaCache {
   }
 
   /**
-   * Returns the compiled {@link JsonSchema} for the given OASF version.
+   * Returns the compiled {@link Schema} for the given OASF version.
    *
    * @param version the OASF schema version (e.g. {@code "1.0.0"})
    * @return the compiled schema ready for local validation
    * @throws OasfValidationException if no bundled schema exists for the requested version
    */
-  public JsonSchema getSchema(final String version) {
+  public Schema getSchema(final String version) {
     return cache.computeIfAbsent(version, this::loadSchema);
   }
 
-  private JsonSchema loadSchema(final String version) {
+  private Schema loadSchema(final String version) {
     final String resourcePath = SCHEMA_RESOURCE_PATTERN.formatted(version);
     try (final InputStream schemaStream = OasfSchemaCache.class.getResourceAsStream(resourcePath)) {
       if (Objects.isNull(schemaStream)) {
-        final var errorMessage =
+        throw new OasfValidationException(
             "No bundled schema found for version: %s (expected classpath resource: %s)"
-                .formatted(version, resourcePath);
-        throw new OasfValidationException(errorMessage);
+                .formatted(version, resourcePath));
       }
-      final JsonNode schemaNode = objectMapper.readTree(schemaStream);
-      final JsonSchemaFactory factory =
-          JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
-      return factory.getSchema(schemaNode);
+      final byte[] schemaBytes = schemaStream.readAllBytes();
+      final String schemaString = new String(schemaBytes, StandardCharsets.UTF_8);
+      final JsonNode schemaNode = objectMapper.readTree(schemaBytes);
+      final String schemaId = schemaNode.path("$id").asText();
+      final SchemaRegistry schemaRegistry =
+          SchemaRegistry.withDialect(
+              Dialects.getDraft7(), builder -> builder.schemas(Map.of(schemaId, schemaString)));
+      return schemaRegistry.getSchema(SchemaLocation.of(schemaId));
     } catch (final IOException exception) {
-      final var errorMessage = "Failed to load schema for version: %s".formatted(version);
-      throw new OasfValidationException(errorMessage, exception);
+      throw new OasfValidationException(
+          "Failed to load schema for version: %s".formatted(version), exception);
     }
   }
 }
